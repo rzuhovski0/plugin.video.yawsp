@@ -1,6 +1,6 @@
 # Yet Another Webshare Plugin - fork
 
-Kodi plugin pre prehravanie obsahu zo sluzby Webshare.cz
+Kodi plugin pro přehrávání obsahu ze služby Webshare.cz
 
 ## Funkcie
 
@@ -23,6 +23,45 @@ Kodi plugin pre prehravanie obsahu zo sluzby Webshare.cz
 3. Procházejte a vyhledávejte obsah
 4. Pro vyhledání seriálu použijte novou položku "Seriály" v hlavním menu
 
+## Instalace doplňku
+
+### Instalace z repozitáře GitHub
+
+Existuje několik způsobů, jak nainstalovat tento doplněk přímo z GitHubu:
+
+#### Metoda 1: Stažení a instalace z ZIP souboru
+
+1. Stáhněte si ZIP soubor tohoto repozitáře:
+
+   - Klikněte na tlačítko "Code" na hlavní stránce repozitáře
+   - Vyberte "Download ZIP"
+   - Stáhne se soubor s celým repozitářem
+2. V Kodi:
+
+   - Jděte do "Nastavení" (ikona ozubeného kola)
+   - Vyberte "Doplňky"
+   - Klikněte na "Instalovat z archivu ZIP"
+   - Najděte stažený ZIP soubor
+   - Počkejte na oznámení o úspěšné instalaci
+
+#### Metoda 2: Pomocí GitHub Browser doplňku
+
+1. Nainstalujte doplněk "GitHub Browser" z oficiálního repozitáře Kodi
+2. Spusťte GitHub Browser
+3. Vyhledejte "plugin.video.yawsp" nebo URL tohoto repozitáře
+4. Vyberte tento doplněk a klikněte na "Instalovat"
+
+#### Metoda 3: Přímá instalace ze souboru ZIP v repozitáři
+
+Pokud je v repozitáři připraven ZIP soubor s doplňkem (plugin.video.yawsp-0.3.0.zip):
+
+1. V Kodi:
+   - Jděte do "Nastavení" -> "Doplňky"
+   - Vyberte "Instalovat z URL"
+   - Zadejte přímý odkaz na ZIP soubor, například:
+     https://github.com/peca2345/plugin.video.yawsp/blob/master/plugin/plugin.video.yawsp-master.zip
+   - Počkejte na oznámení o úspěšné instalaci
+
 ## Správce seriálů
 
 Nová funkce pro správu seriálů umožňuje:
@@ -32,8 +71,31 @@ Nová funkce pro správu seriálů umožňuje:
 - Rychle přistupovat k oblíbeným seriálům
 - Přehrávat epizody stejně jako běžná videa
 
+### Nápověda pro správce seriálů
+
+V této aktualizaci doplňku YaWSP (v0.3.0) byl přidán správce seriálů, který umožňuje:
+
+- Vyhledávat seriály na Webshare (např. "Red Dwarf")
+- Automaticky organizovat nalezené soubory do sezón a epizod
+- Ukládat historii vyhledávání pro rychlý přístup
+- Přehledně procházet epizody v jednotlivých sezónách
+
+#### Jak používat správce seriálů:
+
+1. V hlavním menu vyberte položku "Serialy"
+2. Klikněte na "Hledat novy serial"
+3. Zadejte název seriálu (např. "Red Dwarf")
+4. Doplněk vyhledá všechny dostupné epizody a automaticky je zorganizuje
+5. Procházejte seriál podle sezón a vyberte si konkrétní epizodu pro přehrání
+
+Vyhledané seriály zůstanou uloženy v historii, takže k nim budete mít kdykoli rychlý přístup.
+
+#### Poznámka:
+
+Pro správné fungování je potřeba mít platný účet Webshare a být přihlášen v nastavení doplňku.
+
 ## Varování
 
-Plugin neposkytuje žádný obsah, je to jen simulace prohlížeče veřejně dostupné webové stránky. 
+Plugin neposkytuje žádný obsah, je to jen simulace prohlížeče veřejně dostupné webové stránky.
 
 Nejsem zodpovědný za obsah, který tato stránka poskytuje.
