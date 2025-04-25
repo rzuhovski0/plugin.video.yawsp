@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.yawsp" name="YAWsP" version="0.2.0" provider-name="cache-sk">
+<addon id="plugin.video.yawsp" name="YAWsP" version="0.3.0" provider-name="cache-sk with user-extensions">
     <requires>
         <!--import addon="xbmc.python" version="2.19.0"/-->
         <import addon="script.module.requests" version="2.18.4"/>
@@ -21,6 +21,10 @@
             <icon>resources/icon.png</icon>
         </assets>
         <news>
+[B]0.3.0[/B]
+- pridana funkce spravce serialu - umoznuje vyhledat, organizovat a sledovat serialy
+- automaticke trideni epizod do sezon
+- historie vyhledanych serialu
 [B]0.2.0[/B]
 - nexus compatibility
 [B]0.1.9[/B]
