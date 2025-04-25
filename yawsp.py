@@ -22,6 +22,7 @@ import unidecode
 import re
 import zipfile
 import uuid
+import series_manager
 
 try:
     from urllib import urlencode
@@ -665,6 +666,11 @@ def menu():
     listitem.setArt({'icon': 'DefaultAddonsUpdates.png'})
     xbmcplugin.addDirectoryItem(_handle, get_url(action='history'), listitem, True)
     
+    # Add Series Manager menu item
+    listitem = xbmcgui.ListItem(label='Serialy')
+    listitem.setArt({'icon': 'DefaultTVShows.png'})
+    xbmcplugin.addDirectoryItem(_handle, get_url(action='series'), listitem, True)
+    
     if 'true' == _addon.getSetting('experimental'):
         listitem = xbmcgui.ListItem(label='Backup DB')
         listitem.setArt({'icon': 'DefaultAddonsZip.png'})
@@ -675,6 +681,111 @@ def menu():
     xbmcplugin.addDirectoryItem(_handle, get_url(action='settings'), listitem, False)
 
     xbmcplugin.endOfDirectory(_handle)
+
+def series_menu(params):
+    """Handle Series functionality"""
+    # Initialize SeriesManager
+    sm = series_manager.SeriesManager(_addon, _profile)
+    
+    series_manager.create_series_menu(sm, _handle)
+
+def series_search(params):
+    """Search for a TV series and organize it into seasons and episodes"""
+    token = revalidate()
+    
+    # Ask for series name
+    series_name = ask(None)
+    if not series_name:
+        xbmcplugin.endOfDirectory(_handle, succeeded=False)
+        return
+    
+    # Initialize SeriesManager and perform search
+    sm = series_manager.SeriesManager(_addon, _profile)
+    
+    # Show progress dialog
+    progress = xbmcgui.DialogProgress()
+    progress.create('YaWSP', f'Vyhledavam serial {series_name}...')
+    
+    try:
+        # Search for the series
+        series_data = sm.search_series(series_name, api, token)
+        
+        if not series_data or not series_data['seasons']:
+            progress.close()
+            popinfo('Nenalezeny zadne epizody tohoto serialu', icon=xbmcgui.NOTIFICATION_WARNING)
+            xbmcplugin.endOfDirectory(_handle, succeeded=False)
+            return
+        
+        # Success
+        progress.close()
+        popinfo(f'Nalezeno {sum(len(season) for season in series_data["seasons"].values())} epizod v {len(series_data["seasons"])} sezonach')
+        
+        # Redirect to series detail
+        xbmc.executebuiltin(f'Container.Update({get_url(action="series_detail", series_name=series_name)})')
+        
+    except Exception as e:
+        progress.close()
+        traceback.print_exc()
+        popinfo(f'Chyba: {str(e)}', icon=xbmcgui.NOTIFICATION_ERROR)
+        xbmcplugin.endOfDirectory(_handle, succeeded=False)
+
+def series_detail(params):
+    """Show seasons for a series"""
+    xbmcplugin.setPluginCategory(_handle, _addon.getAddonInfo('name') + " \ " + params['series_name'])
+    
+    # Initialize SeriesManager
+    sm = series_manager.SeriesManager(_addon, _profile)
+    
+    # Display seasons menu
+    series_manager.create_seasons_menu(sm, _handle, params['series_name'])
+
+def series_season(params):
+    """Show episodes for a season"""
+    series_name = params['series_name']
+    season = params['season']
+    
+    xbmcplugin.setPluginCategory(_handle, _addon.getAddonInfo('name') + " \ " + series_name + " \ " + f"Rada {season}")
+    
+    # Initialize SeriesManager
+    sm = series_manager.SeriesManager(_addon, _profile)
+    
+    # Display episodes menu
+    series_manager.create_episodes_menu(sm, _handle, series_name, season)
+
+def series_refresh(params):
+    """Refresh series data"""
+    token = revalidate()
+    series_name = params['series_name']
+    
+    # Initialize SeriesManager and perform search
+    sm = series_manager.SeriesManager(_addon, _profile)
+    
+    # Show progress dialog
+    progress = xbmcgui.DialogProgress()
+    progress.create('YaWSP', f'Aktualizuji data pro serial {series_name}...')
+    
+    try:
+        # Search for the series
+        series_data = sm.search_series(series_name, api, token)
+        
+        if not series_data or not series_data['seasons']:
+            progress.close()
+            popinfo('Nenalezeny zadne epizody tohoto serialu', icon=xbmcgui.NOTIFICATION_WARNING)
+            xbmcplugin.endOfDirectory(_handle, succeeded=False)
+            return
+        
+        # Success
+        progress.close()
+        popinfo(f'Aktualizovano: {sum(len(season) for season in series_data["seasons"].values())} epizod v {len(series_data["seasons"])} sezonach')
+        
+        # Redirect to series detail to refresh the view
+        xbmc.executebuiltin(f'Container.Update({get_url(action="series_detail", series_name=series_name)})')
+        
+    except Exception as e:
+        progress.close()
+        traceback.print_exc()
+        popinfo(f'Chyba: {str(e)}', icon=xbmcgui.NOTIFICATION_ERROR)
+        xbmcplugin.endOfDirectory(_handle, succeeded=False)
 
 def router(paramstring):
     params = dict(parse_qsl(paramstring))
@@ -695,6 +806,17 @@ def router(paramstring):
             download(params)
         elif params['action'] == 'db':
             db(params)
+        # Series Manager actions
+        elif params['action'] == 'series':
+            series_menu(params)
+        elif params['action'] == 'series_search':
+            series_search(params)
+        elif params['action'] == 'series_detail':
+            series_detail(params)
+        elif params['action'] == 'series_season':
+            series_season(params)
+        elif params['action'] == 'series_refresh':
+            series_refresh(params)
         else:
             menu()
     else:
