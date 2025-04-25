@@ -18,7 +18,7 @@ Kodi plugin pro přehrávání obsahu ze služby Webshare.cz
 
 ## Použití
 
-1. Nainstalujte doplněk z repozitáře nebo ze zip souboru
+1. Stáhněte a nainstalujte doplněk ze zip souboru
 2. Nakonfigurujte svoje přihlašovací údaje v nastavení doplňku
 3. Procházejte a vyhledávejte obsah
 4. Pro vyhledání seriálu použijte novou položku "Seriály" v hlavním menu
@@ -36,8 +36,9 @@ Existuje několik způsobů, jak nainstalovat tento doplněk přímo z GitHubu:
    - Klikněte na tlačítko "Code" na hlavní stránce repozitáře
    - Vyberte "Download ZIP"
    - Stáhne se soubor s celým repozitářem
+     
 2. V Kodi:
-
+   
    - Jděte do "Nastavení" (ikona ozubeného kola)
    - Vyberte "Doplňky"
    - Klikněte na "Instalovat z archivu ZIP"
@@ -50,17 +51,6 @@ Existuje několik způsobů, jak nainstalovat tento doplněk přímo z GitHubu:
 2. Spusťte GitHub Browser
 3. Vyhledejte "plugin.video.yawsp" nebo URL tohoto repozitáře
 4. Vyberte tento doplněk a klikněte na "Instalovat"
-
-#### Metoda 3: Přímá instalace ze souboru ZIP v repozitáři
-
-Pokud je v repozitáři připraven ZIP soubor s doplňkem (plugin.video.yawsp-0.3.0.zip):
-
-1. V Kodi:
-   - Jděte do "Nastavení" -> "Doplňky"
-   - Vyberte "Instalovat z URL"
-   - Zadejte přímý odkaz na ZIP soubor, například:
-     https://github.com/peca2345/plugin.video.yawsp/blob/master/plugin/plugin.video.yawsp-master.zip
-   - Počkejte na oznámení o úspěšné instalaci
 
 ## Správce seriálů
 
