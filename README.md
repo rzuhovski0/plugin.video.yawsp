@@ -2,6 +2,11 @@
 
 Kodi plugin pro přehrávání obsahu ze služby Webshare.cz
 
+# To create a zip installable file
+
+cd /path/to/parent/directory
+zip -r plugin.video.yawsp-0.3.1.zip plugin.video.yawsp -x "_/\._" "_/plugin/_"
+
 ## Funkcie
 
 - Vyhledávání obsahu na Webshare
@@ -36,9 +41,9 @@ Existuje několik způsobů, jak nainstalovat tento doplněk přímo z GitHubu:
    - Klikněte na tlačítko "Code" na hlavní stránce repozitáře
    - Vyberte "Download ZIP"
    - Stáhne se soubor s celým repozitářem
-     
+
 2. V Kodi:
-   
+
    - Jděte do "Nastavení" (ikona ozubeného kola)
    - Vyberte "Doplňky"
    - Klikněte na "Instalovat z archivu ZIP"

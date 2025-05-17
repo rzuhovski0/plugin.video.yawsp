@@ -1,6 +1,8 @@
 import datetime
 import re
 
+import tmdb
+
 def score_result(file_info, search_query=None):
     """
     Score a search result based on quality indicators in filename and metadata.
@@ -172,7 +174,7 @@ def should_include_result(file_info, filters):
     
     return True
 
-def filter_and_sort_results(files, search_query=None, filters=None):
+def filter_and_sort_results(files, search_query=None, filters=None, tmdb_api=None):
     """
     Filter and sort search results by quality and relevance
     
@@ -180,6 +182,7 @@ def filter_and_sort_results(files, search_query=None, filters=None):
         files (list): List of file dictionaries to sort
         search_query (str, optional): The search query for relevance scoring
         filters (dict, optional): Dictionary with filter settings
+        tmdb_api (TMDbAPI, optional): TMDb API instance for metadata enrichment
         
     Returns:
         list: Filtered and sorted list of file dictionaries
@@ -191,6 +194,15 @@ def filter_and_sort_results(files, search_query=None, filters=None):
     filtered_files = [f for f in files if should_include_result(f, filters)]
     
     # Sort results by quality score
-    return sorted(filtered_files, 
+    sorted_files = sorted(filtered_files, 
                   key=lambda x: score_result(x, search_query), 
                   reverse=True)
+    
+    # Enrich with TMDb metadata if API is available
+    if tmdb_api and filters.get('enrich_metadata', True):
+        for i, file_info in enumerate(sorted_files):
+            # Only enrich the top N results to minimize API calls
+            if i < 20:  # Process only top 20 results
+                sorted_files[i] = tmdb_api.enrich_result(file_info)
+    
+    return sorted_files

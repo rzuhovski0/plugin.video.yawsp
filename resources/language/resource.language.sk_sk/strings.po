@@ -129,6 +129,26 @@ msgctxt "#30054"
 msgid "4K/UHD only"
 msgstr "Iba 4K/UHD"
 
+msgctxt "#30060"
+msgid "TMDb Integration"
+msgstr "TMDb Integration"
+
+msgctxt "#30061"
+msgid "Enable TMDb metadata"
+msgstr "Enable TMDb metadata"
+
+msgctxt "#30062"
+msgid "TMDb API Key"
+msgstr "TMDb API Key"
+
+msgctxt "#30063"
+msgid "TMDb Language"
+msgstr "TMDb Language"
+
+msgctxt "#30064"
+msgid "Include adult content in TMDb results"
+msgstr "Include adult content in TMDb results"
+
 msgctxt "#30101"
 msgid "To use this plugin, you must enter Webshare account in the settings."
 msgstr "Pre použitie tohto pluginu musíte zadať v nastaveniach konto pre Webshare."

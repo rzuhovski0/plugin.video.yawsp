@@ -25,6 +25,7 @@ import uuid
 import series_manager
 
 import search_ranking
+import tmdb
 
 try:
     from urllib import urlencode
@@ -268,11 +269,17 @@ def dosearch(token, what, category, sort, limit, offset, action):
             filters = {
                 'min_resolution': int(_addon.getSetting('sminres')),
                 'exclude_cam': _addon.getSetting('sexcludecam') == 'true',
-                'max_age': int(_addon.getSetting('smaxage'))
+                'max_age': int(_addon.getSetting('smaxage')),
+                'enrich_metadata': _addon.getSetting('tmdb_enable') == 'true'
             }
             
+            # Initialize TMDb API if enabled
+            tmdb_api = None
+            if filters['enrich_metadata']:
+                tmdb_api = tmdb.TMDbAPI(_addon, _profile)
+            
             # Apply our custom filtering and sorting
-            files = search_ranking.filter_and_sort_results(files, what, filters)
+            files = search_ranking.filter_and_sort_results(files, what, filters, tmdb_api)
         
         # Display pagination (previous page)
         if offset > 0:
@@ -284,7 +291,13 @@ def dosearch(token, what, category, sort, limit, offset, action):
         for item in files:
             commands = []
             commands.append(( _addon.getLocalizedString(30214), 'Container.Update(' + get_url(action='search',toqueue=item['ident'], what=what, offset=offset) + ')'))
-            listitem = tolistitem(item,commands)
+            
+            # Create list item with TMDb metadata if available
+            if 'tmdb' in item:
+                listitem = create_tmdb_listitem(item)
+            else:
+                listitem = tolistitem(item, commands)
+                
             xbmcplugin.addDirectoryItem(_handle, get_url(action='play',ident=item['ident'],name=item['name']), listitem, False)
         
         # Display pagination (next page)
@@ -299,6 +312,62 @@ def dosearch(token, what, category, sort, limit, offset, action):
             xbmcplugin.addDirectoryItem(_handle, get_url(action=action, what=what, category=category, sort=sort, limit=limit, offset=offset+limit), listitem, True)
     else:
         popinfo(_addon.getLocalizedString(30107), icon=xbmcgui.NOTIFICATION_WARNING)
+
+# Add a new function to create list items with TMDb metadata
+def create_tmdb_listitem(file, addcommands=[]):
+    """Create a list item with TMDb metadata"""
+    tmdb_data = file['tmdb']
+    
+    # Use TMDb title if available, otherwise use original name
+    title = tmdb_data.get('title', file['name'])
+    
+    # Add year if available
+    if 'release_date' in tmdb_data and tmdb_data['release_date']:
+        year = tmdb_data['release_date'][:4]
+        display_title = f"{title} ({year})"
+    else:
+        display_title = title
+    
+    # Add quality info from file name
+    if 'size' in file:
+        size = sizelize(file['size'])
+        display_title = f"{display_title} [{size}]"
+    
+    # Create list item
+    listitem = xbmcgui.ListItem(label=display_title)
+    
+    # Set artwork
+    art = {}
+    if tmdb_data.get('poster_path'):
+        art['poster'] = tmdb_data['poster_path']
+        art['thumb'] = tmdb_data['poster_path']
+    if tmdb_data.get('backdrop_path'):
+        art['fanart'] = tmdb_data['backdrop_path']
+    
+    if art:
+        listitem.setArt(art)
+    
+    # Set video info
+    info = {
+        'title': display_title,
+        'originaltitle': tmdb_data.get('original_title', title),
+        'year': year if 'release_date' in tmdb_data and tmdb_data['release_date'] else None,
+        'rating': tmdb_data.get('vote_average'),
+        'plot': tmdb_data.get('overview', '')
+    }
+    
+    listitem.setInfo('video', info)
+    listitem.setProperty('IsPlayable', 'true')
+    
+    # Add context menu commands
+    commands = []
+    commands.append(( _addon.getLocalizedString(30211), 'RunPlugin(' + get_url(action='info',ident=file['ident']) + ')'))
+    commands.append(( _addon.getLocalizedString(30212), 'RunPlugin(' + get_url(action='download',ident=file['ident']) + ')'))
+    if addcommands:
+        commands = commands + addcommands
+    
+    listitem.addContextMenuItems(commands)
+    return listitem
 
 def search(params):
     xbmcplugin.setPluginCategory(_handle, _addon.getAddonInfo('name') + " \ " + _addon.getLocalizedString(30201))
