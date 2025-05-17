@@ -24,6 +24,8 @@ import zipfile
 import uuid
 import series_manager
 
+import search_ranking
+
 try:
     from urllib import urlencode
     from urlparse import parse_qsl, urlparse
@@ -254,25 +256,44 @@ def dosearch(token, what, category, sort, limit, offset, action):
     response = api('search',{'what':'' if what == NONE_WHAT else what, 'category':category, 'sort':sort, 'limit': limit, 'offset': offset, 'wst':token, 'maybe_removed':'true'})
     xml = ET.fromstring(response.content)
     if is_ok(xml):
+        # Convert XML results to a list for custom sorting and filtering
+        files = []
+        for file in xml.iter('file'):
+            item = todict(file)
+            files.append(item)
         
-        if offset > 0: #prev page
+        # Only apply custom sorting for video searches
+        if category == 'video' or category == '':
+            # Get filter settings
+            filters = {
+                'min_resolution': int(_addon.getSetting('sminres')),
+                'exclude_cam': _addon.getSetting('sexcludecam') == 'true',
+                'max_age': int(_addon.getSetting('smaxage'))
+            }
+            
+            # Apply our custom filtering and sorting
+            files = search_ranking.filter_and_sort_results(files, what, filters)
+        
+        # Display pagination (previous page)
+        if offset > 0:
             listitem = xbmcgui.ListItem(label=_addon.getLocalizedString(30206))
             listitem.setArt({'icon': 'DefaultAddonsSearch.png'})
             xbmcplugin.addDirectoryItem(_handle, get_url(action=action, what=what, category=category, sort=sort, limit=limit, offset=offset - limit if offset > limit else 0), listitem, True)
-            
-        for file in xml.iter('file'):
-            item = todict(file)
+        
+        # Display the results
+        for item in files:
             commands = []
             commands.append(( _addon.getLocalizedString(30214), 'Container.Update(' + get_url(action='search',toqueue=item['ident'], what=what, offset=offset) + ')'))
             listitem = tolistitem(item,commands)
             xbmcplugin.addDirectoryItem(_handle, get_url(action='play',ident=item['ident'],name=item['name']), listitem, False)
         
+        # Display pagination (next page)
         try:
             total = int(xml.find('total').text)
         except:
             total = 0
             
-        if offset + limit < total: #next page
+        if offset + limit < total:
             listitem = xbmcgui.ListItem(label=_addon.getLocalizedString(30207))
             listitem.setArt({'icon': 'DefaultAddonsSearch.png'})
             xbmcplugin.addDirectoryItem(_handle, get_url(action=action, what=what, category=category, sort=sort, limit=limit, offset=offset+limit), listitem, True)

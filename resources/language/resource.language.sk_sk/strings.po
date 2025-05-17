@@ -109,9 +109,25 @@ msgctxt "#30044"
 msgid "Notify every"
 msgstr "Notifikovať každých"
 
+msgctxt "#30050"
+msgid "Any"
+msgstr "Akékoľvek"
+
 msgctxt "#30051"
-msgid "Experimental functions"
-msgstr "Experimentálne funkcie"
+msgid "480p+"
+msgstr "480p+"
+
+msgctxt "#30052"
+msgid "720p+"
+msgstr "720p+"
+
+msgctxt "#30053"
+msgid "1080p+"
+msgstr "1080p+"
+
+msgctxt "#30054"
+msgid "4K/UHD only"
+msgstr "Iba 4K/UHD"
 
 msgctxt "#30101"
 msgid "To use this plugin, you must enter Webshare account in the settings."
