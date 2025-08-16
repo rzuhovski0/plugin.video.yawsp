@@ -253,15 +253,211 @@ def removesearch(what):
             except Exception as e:
                 traceback.print_exc()
 
+# def dosearch(token, what, category, sort, limit, offset, action):
+#     # Get TMDb API instance if enabled
+#     tmdb_api = None
+#     if _addon.getSetting('tmdb_enable') == 'true':
+#         tmdb_api = tmdb.TMDbAPI(_addon, _profile)
+
+#     all_files = []
+
+#     # If TMDb is enabled and this is a new search (offset=0), try enhanced queries
+#     if tmdb_api and offset == 0 and what != NONE_WHAT:
+#         search_variants = tmdb_api.enhance_search_query(what)
+        
+#         # Try each search variant
+#         for i, variant in enumerate(search_variants[:3]):  # Limit to top 3 variants
+#             response = api('search', {
+#                 'what': variant, 
+#                 'category': category, 
+#                 'sort': sort, 
+#                 'limit': limit if i == 0 else min(limit, 50),  # Fewer results for variants
+#                 'offset': 0,  # Always start from 0 for variants
+#                 'wst': token, 
+#                 'maybe_removed': 'true'
+#             })
+            
+#             xml = ET.fromstring(response.content)
+#             if is_ok(xml):
+#                 for file in xml.iter('file'):
+#                     item = todict(file)
+#                     # Add search source info for debugging
+#                     item['search_variant'] = variant
+#                     item['search_priority'] = i
+#                     all_files.append(item)
+#     else:
+#         # Fallback to original single search
+#         response = api('search', {
+#             'what': '' if what == NONE_WHAT else what, 
+#             'category': category, 
+#             'sort': sort, 
+#             'limit': limit, 
+#             'offset': offset, 
+#             'wst': token, 
+#             'maybe_removed': 'true'
+#         })
+        
+#         xml = ET.fromstring(response.content)
+#         if is_ok(xml):
+#             for file in xml.iter('file'):
+#                 item = todict(file)
+#                 item['search_variant'] = what
+#                 item['search_priority'] = 0
+#                 all_files.append(item)
+
+#     if is_ok(xml):
+#         # Remove duplicates based on file identifier
+#         seen_files = {}
+#         for item in all_files:
+#             if item['ident'] not in seen_files:
+#                 seen_files[item['ident']] = item
+#             else:
+#                 # Keep the one with higher priority (lower number)
+#                 if item['search_priority'] < seen_files[item['ident']]['search_priority']:
+#                     seen_files[item['ident']] = item
+        
+#         files = list(seen_files.values())
+        
+#         # Only apply custom sorting for video searches
+#         if category == 'video' or category == '':
+#             # Get filter settings
+#             filters = {
+#                 'min_resolution': int(_addon.getSetting('sminres')),
+#                 'exclude_cam': _addon.getSetting('sexcludecam') == 'true',
+#                 'max_age': int(_addon.getSetting('smaxage')),
+#                 'enrich_metadata': _addon.getSetting('tmdb_enable') == 'true'
+#             }
+            
+#             # Initialize TMDb API if enabled
+#             tmdb_api = None
+#             if filters['enrich_metadata']:
+#                 tmdb_api = tmdb.TMDbAPI(_addon, _profile)
+            
+#             # Apply our custom filtering and sorting
+#             files = search_ranking.filter_and_sort_results(files, what, filters, tmdb_api)
+        
+#         # Display pagination (previous page)
+#         if offset > 0:
+#             listitem = xbmcgui.ListItem(label=_addon.getLocalizedString(30206))
+#             listitem.setArt({'icon': 'DefaultAddonsSearch.png'})
+#             xbmcplugin.addDirectoryItem(_handle, get_url(action=action, what=what, category=category, sort=sort, limit=limit, offset=offset - limit if offset > limit else 0), listitem, True)
+        
+#         # Display the results
+#         for item in files:
+#             commands = []
+#             commands.append(( _addon.getLocalizedString(30214), 'Container.Update(' + get_url(action='search',toqueue=item['ident'], what=what, offset=offset) + ')'))
+            
+#             # Create list item with TMDb metadata if available
+#             if 'tmdb' in item:
+#                 listitem = create_tmdb_listitem(item)
+#             else:
+#                 listitem = tolistitem(item, commands)
+                
+#             xbmcplugin.addDirectoryItem(_handle, get_url(action='play',ident=item['ident'],name=item['name']), listitem, False)
+        
+#         # Display pagination (next page)
+#         try:
+#             total = int(xml.find('total').text)
+#         except:
+#             total = 0
+            
+#         if offset + limit < total:
+#             listitem = xbmcgui.ListItem(label=_addon.getLocalizedString(30207))
+#             listitem.setArt({'icon': 'DefaultAddonsSearch.png'})
+#             xbmcplugin.addDirectoryItem(_handle, get_url(action=action, what=what, category=category, sort=sort, limit=limit, offset=offset+limit), listitem, True)
+#     else:
+#         popinfo(_addon.getLocalizedString(30107), icon=xbmcgui.NOTIFICATION_WARNING)
+
 def dosearch(token, what, category, sort, limit, offset, action):
-    response = api('search',{'what':'' if what == NONE_WHAT else what, 'category':category, 'sort':sort, 'limit': limit, 'offset': offset, 'wst':token, 'maybe_removed':'true'})
-    xml = ET.fromstring(response.content)
+    # Add debugging logs
+    xbmc.log(f"YaWSP: Starting search for '{what}', category='{category}', offset={offset}", level=xbmc.LOGINFO)
+    
+    # Get TMDb API instance if enabled
+    tmdb_api = None
+    if _addon.getSetting('tmdb_enable') == 'true':
+        tmdb_api = tmdb.TMDbAPI(_addon, _profile)
+
+    all_files = []
+
+    # If TMDb is enabled and this is a new search (offset=0), try enhanced queries
+    if tmdb_api and offset == 0 and what != NONE_WHAT:
+        xbmc.log(f"YaWSP: Using TMDb enhanced search for '{what}'", level=xbmc.LOGINFO)
+        
+        # Check if enhance_search_query method exists
+        if hasattr(tmdb_api, 'enhance_search_query'):
+            search_variants = tmdb_api.enhance_search_query(what)
+            xbmc.log(f"YaWSP: TMDb enhanced queries: {search_variants}", level=xbmc.LOGINFO)
+        else:
+            # Fallback: create basic variants manually
+            search_variants = [what, what.upper(), what.title()]
+            xbmc.log(f"YaWSP: Using manual search variants: {search_variants}", level=xbmc.LOGINFO)
+        
+        # Try each search variant
+        for i, variant in enumerate(search_variants[:3]):  # Limit to top 3 variants
+            xbmc.log(f"YaWSP: Searching variant {i+1}: '{variant}'", level=xbmc.LOGINFO)
+            
+            response = api('search', {
+                'what': variant, 
+                'category': category, 
+                'sort': sort, 
+                'limit': limit if i == 0 else min(limit, 50),  # Fewer results for variants
+                'offset': 0,  # Always start from 0 for variants
+                'wst': token, 
+                'maybe_removed': 'true'
+            })
+            
+            xml = ET.fromstring(response.content)
+            if is_ok(xml):
+                result_count = 0
+                for file in xml.iter('file'):
+                    item = todict(file)
+                    # Add search source info for debugging
+                    item['search_variant'] = variant
+                    item['search_priority'] = i
+                    all_files.append(item)
+                    result_count += 1
+                
+                xbmc.log(f"YaWSP: Variant '{variant}' returned {result_count} results", level=xbmc.LOGINFO)
+            else:
+                xbmc.log(f"YaWSP: Variant '{variant}' failed", level=xbmc.LOGWARNING)
+    else:
+        xbmc.log(f"YaWSP: Using standard search for '{what}'", level=xbmc.LOGINFO)
+        
+        # Fallback to original single search
+        response = api('search', {
+            'what': '' if what == NONE_WHAT else what, 
+            'category': category, 
+            'sort': sort, 
+            'limit': limit, 
+            'offset': offset, 
+            'wst': token, 
+            'maybe_removed': 'true'
+        })
+        
+        xml = ET.fromstring(response.content)
+        if is_ok(xml):
+            for file in xml.iter('file'):
+                item = todict(file)
+                item['search_variant'] = what
+                item['search_priority'] = 0
+                all_files.append(item)
+
+    # Process results only if we have a valid XML response
     if is_ok(xml):
-        # Convert XML results to a list for custom sorting and filtering
-        files = []
-        for file in xml.iter('file'):
-            item = todict(file)
-            files.append(item)
+        xbmc.log(f"YaWSP: Total raw results: {len(all_files)}", level=xbmc.LOGINFO)
+        
+        # Remove duplicates based on file identifier
+        seen_files = {}
+        for item in all_files:
+            if item['ident'] not in seen_files:
+                seen_files[item['ident']] = item
+            else:
+                # Keep the one with higher priority (lower number)
+                if item['search_priority'] < seen_files[item['ident']]['search_priority']:
+                    seen_files[item['ident']] = item
+        
+        files = list(seen_files.values())
+        xbmc.log(f"YaWSP: After deduplication: {len(files)} results", level=xbmc.LOGINFO)
         
         # Only apply custom sorting for video searches
         if category == 'video' or category == '':
@@ -273,13 +469,9 @@ def dosearch(token, what, category, sort, limit, offset, action):
                 'enrich_metadata': _addon.getSetting('tmdb_enable') == 'true'
             }
             
-            # Initialize TMDb API if enabled
-            tmdb_api = None
-            if filters['enrich_metadata']:
-                tmdb_api = tmdb.TMDbAPI(_addon, _profile)
-            
             # Apply our custom filtering and sorting
             files = search_ranking.filter_and_sort_results(files, what, filters, tmdb_api)
+            xbmc.log(f"YaWSP: After filtering and ranking: {len(files)} results", level=xbmc.LOGINFO)
         
         # Display pagination (previous page)
         if offset > 0:
@@ -294,7 +486,7 @@ def dosearch(token, what, category, sort, limit, offset, action):
             
             # Create list item with TMDb metadata if available
             if 'tmdb' in item:
-                listitem = create_tmdb_listitem(item)
+                listitem = create_tmdb_listitem(item, commands)
             else:
                 listitem = tolistitem(item, commands)
                 
@@ -311,6 +503,7 @@ def dosearch(token, what, category, sort, limit, offset, action):
             listitem.setArt({'icon': 'DefaultAddonsSearch.png'})
             xbmcplugin.addDirectoryItem(_handle, get_url(action=action, what=what, category=category, sort=sort, limit=limit, offset=offset+limit), listitem, True)
     else:
+        xbmc.log("YaWSP: Search failed - no valid XML response", level=xbmc.LOGWARNING)
         popinfo(_addon.getLocalizedString(30107), icon=xbmcgui.NOTIFICATION_WARNING)
 
 # Add a new function to create list items with TMDb metadata
@@ -322,6 +515,7 @@ def create_tmdb_listitem(file, addcommands=[]):
     title = tmdb_data.get('title', file['name'])
     
     # Add year if available
+    year = None  # Initialize year variable
     if 'release_date' in tmdb_data and tmdb_data['release_date']:
         year = tmdb_data['release_date'][:4]
         display_title = f"{title} ({year})"
@@ -351,7 +545,7 @@ def create_tmdb_listitem(file, addcommands=[]):
     info = {
         'title': display_title,
         'originaltitle': tmdb_data.get('original_title', title),
-        'year': year if 'release_date' in tmdb_data and tmdb_data['release_date'] else None,
+        'year': int(year) if year else None,  # Convert to int and handle None
         'rating': tmdb_data.get('vote_average'),
         'plot': tmdb_data.get('overview', '')
     }

@@ -3,14 +3,15 @@ import re
 
 import tmdb
 
-def score_result(file_info, search_query=None):
+def score_result(file_info, search_query=None, original_query=None):
     """
     Score a search result based on quality indicators in filename and metadata.
     Higher score = better quality/more relevant result.
     
     Args:
         file_info (dict): Dictionary with file information
-        search_query (str, optional): The search query for relevance scoring
+        search_query (str, optional): The actual search query used (could be TMDb enhanced)
+        original_query (str, optional): The original user query
         
     Returns:
         float: Quality and relevance score (higher is better)
@@ -84,15 +85,16 @@ def score_result(file_info, search_query=None):
     except (ValueError, TypeError):
         pass
     
-    # Title relevance scoring (when search_query is provided)
-    if search_query and search_query.lower() != '%#none#%':
-        search_terms = search_query.lower().split()
+    # Title relevance scoring - use the query that's most relevant
+    query_to_score = search_query or original_query
+    if query_to_score and query_to_score.lower() != '%#none#%':
+        search_terms = query_to_score.lower().split()
         
         # Remove common words that don't help in matching
         search_terms = [t for t in search_terms if len(t) > 2 and t not in ('the', 'and', 'for', 'with')]
         
         # Exact title match (case insensitive)
-        if search_query.lower() in name:
+        if query_to_score.lower() in name:
             score += 200
         
         # Count matching terms and their positions
@@ -119,11 +121,18 @@ def score_result(file_info, search_query=None):
             score -= min((name_words - query_words*2) * 5, 50)
         
         # Year matching bonus (if year is in search query)
-        year_match = re.search(r'\b(19|20)\d{2}\b', search_query)
+        year_match = re.search(r'\b(19|20)\d{2}\b', query_to_score)
         if year_match:
             year = year_match.group(0)
             if year in name:
                 score += 50
+
+    # Boost results found via TMDb enhancement
+    # This should apply regardless of whether we have search queries
+    if file_info.get('search_priority', 0) == 1:  # First TMDb variant
+        score += 75
+    elif file_info.get('search_priority', 0) > 1:  # Other TMDb variants
+        score += 25
     
     return score
 
@@ -180,7 +189,7 @@ def filter_and_sort_results(files, search_query=None, filters=None, tmdb_api=Non
     
     Args:
         files (list): List of file dictionaries to sort
-        search_query (str, optional): The search query for relevance scoring
+        search_query (str, optional): The original user search query
         filters (dict, optional): Dictionary with filter settings
         tmdb_api (TMDbAPI, optional): TMDb API instance for metadata enrichment
         
@@ -194,8 +203,13 @@ def filter_and_sort_results(files, search_query=None, filters=None, tmdb_api=Non
     filtered_files = [f for f in files if should_include_result(f, filters)]
     
     # Sort results by quality score
+    # Pass both the search variant used and the original query
     sorted_files = sorted(filtered_files, 
-                  key=lambda x: score_result(x, search_query), 
+                  key=lambda x: score_result(
+                      x, 
+                      search_query=x.get('search_variant', search_query), 
+                      original_query=search_query
+                  ), 
                   reverse=True)
     
     # Enrich with TMDb metadata if API is available

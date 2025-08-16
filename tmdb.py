@@ -4,7 +4,7 @@ import json
 import re
 import requests
 import time
-import xbmcaddon
+
 
 # TMDb API constants
 TMDB_API_URL = "https://api.themoviedb.org/3"
@@ -27,6 +27,51 @@ class TMDbAPI:
         self.profile_path = profile_path
         self.cache_file = os.path.join(profile_path, 'tmdb_cache.json')
         self.cache = self._load_cache()
+
+    def enhance_search_query(self, user_query):
+        """
+        Enhance user search query by finding the most likely movie/show match
+        and returning optimized search terms for Webshare
+        """
+        if not self.api_key:
+            return [user_query]  # Fallback to original query
+        
+        # Try to search for movies first
+        movie_result = self.search_movie(user_query)
+        
+        search_variants = [user_query]  # Always include original query
+        
+        if movie_result:
+            # Add official title variants
+            if movie_result.get('title') and movie_result['title'].lower() != user_query.lower():
+                search_variants.append(movie_result['title'])
+            
+            # Add original title if different
+            if movie_result.get('original_title') and movie_result['original_title'].lower() != user_query.lower():
+                search_variants.append(movie_result['original_title'])
+            
+            # Add title with year
+            if movie_result.get('release_date'):
+                year = movie_result['release_date'][:4]
+                search_variants.append(f"{movie_result['title']} {year}")
+                
+            # Add alternative formats
+            title = movie_result['title']
+            search_variants.extend([
+                title.upper(),  # All caps version
+                title.replace(' ', '.'),  # Dot separated
+                title.replace(' ', '_'),  # Underscore separated
+            ])
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_variants = []
+        for variant in search_variants:
+            if variant.lower() not in seen:
+                seen.add(variant.lower())
+                unique_variants.append(variant)
+        
+        return unique_variants
         
     def _load_cache(self):
         """Load the TMDb cache from disk"""
@@ -170,3 +215,4 @@ class TMDbAPI:
         }
         
         return webshare_result
+    
